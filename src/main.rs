@@ -22,17 +22,17 @@ use loader::Filetype;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let f = Filetype::PlaintextBinary("test.lbin");
     let results = f.parse_to_word_array()?;
-    println!("{:b}", results[0]);
 
     let mut state = lc3::State {
-        pc_star: 0x3000,
+        pc_star: 0x3000u16 as i16,
         ir: 0x0000,
         mem: results,
-        reg: [0; 8],
-        psr: 0b1000011100000111,
+        reg: [0xFFFFu16 as i16; 8],
+        psr: 0b1_0000_111_00000_111u16 as i16,
     };
 
     state.print();
+    state.execute_next_instruction()?;
     state.execute_next_instruction()?;
     Ok(())
 }
