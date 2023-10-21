@@ -24,16 +24,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let results = f.parse_to_word_array()?;
 
     let mut state = lc3::State {
-        pc_star: 0x3000u16 as i16,
+        pc: 0x3000u16 as i16,
         ir: 0x0000,
         mem: results,
-        reg: [0xFFFFu16 as i16; 8],
-        psr: 0b1_0000_111_00000_111u16 as i16,
+        reg: [0x8888u16 as i16; 8],
+        psr: 0b1_0000_111_00000_000u16 as i16,
     };
 
     state.print();
     state.execute_next_instruction()?;
     state.execute_next_instruction()?;
+    state.print();
     Ok(())
 }
 
