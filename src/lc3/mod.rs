@@ -1,6 +1,7 @@
 use crate::util::{bits, sext};
 
 pub struct State {
+    pub filename: String,
     pub pc: i16,
     pub ir: i16,
     pub mem: [i16; 65536],
