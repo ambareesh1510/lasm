@@ -1,3 +1,5 @@
+pub mod parsers;
+
 use std::fs;
 use std::io;
 

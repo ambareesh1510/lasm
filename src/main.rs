@@ -19,6 +19,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     Tui(TuiArgs),
+    Test,
 }
 
 #[derive(Args)]
@@ -44,6 +45,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             render_tui(&mut state)?;
+        }
+        Commands::Test => {
+            loader::parsers::test();
         }
     }
     Ok(())

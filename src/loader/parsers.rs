@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use nom::{
     IResult,
     bytes::complete::{tag_no_case, tag},
@@ -61,8 +63,46 @@ fn parse_add_from_imm5(input: &str) -> IResult<&str, i16> {
     return_data
 }
 
-pub fn test() -> IResult<&'static str, i16> {
-    println!("parse add from register {:0>16b}", parse_add_from_reg("add r1, r2, r3\n")?.1);
-    println!("parse add from imm5 {:0>16b}", parse_add_from_imm5("add r1, r2, xF\n")?.1);
-    parse_add_from_reg("add r1, r2, r3")
+pub fn test() {
+    match parse_asm(".ORIG x3000".to_owned()) {
+        Ok(_) => {}
+        Err(e) => {
+            println!("{e}")
+        }
+    };
+}
+
+fn parse_asm(source: String) -> Result<[i16; 65536], String> {
+    let tokens = source.split_whitespace().collect::<Vec<&str>>();
+    let symbol_table = HashMap::<&str, usize>::new();
+    let mut current_mem_address = None;
+    let mut return_bytes = [0; 65536];
+    let mut token_ptr = 0;
+    println!("{:?}", tokens);
+    while token_ptr < tokens.len() {
+        match tokens[token_ptr].to_lowercase().as_str() {
+            ".orig" => match current_mem_address {
+                Some(_) => return Err(format!("Already inside an .orig block")),
+                None => {
+                    token_ptr += 1;
+                    let parse_orig_address_result = if &tokens[token_ptr][0..1] == "x" {
+                        u16::from_str_radix(&tokens[token_ptr][1..], 16)
+                    } else {
+                        u16::from_str_radix(tokens[token_ptr], 10)
+                    };
+                    match parse_orig_address_result {
+                        Ok(val) => current_mem_address = Some(val as usize),
+                        Err(e) => return Err(format!("Invalid memory address supplied to .orig (error: {e})")),
+                    }
+                }
+            }
+            ".end" => match current_mem_address {
+                Some(_) => current_mem_address = None,
+                None => return Err(format!("No corresponding .orig directive found")),
+            }
+            _ => {}
+        }
+        token_ptr += 1;
+    }
+    Ok(return_bytes)
 }
