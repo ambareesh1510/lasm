@@ -1,13 +1,13 @@
 use std::fs;
 use std::io;
 
-pub enum Filetype {
-    Asm(&'static str),
-    PlaintextBinary(&'static str),
-    EncodedBinary(&'static str),
+pub enum Filetype<'a> {
+    Asm(&'a str),
+    PlaintextBinary(&'a str),
+    EncodedBinary(&'a str),
 }
 
-impl Filetype {
+impl Filetype<'_> {
     pub fn parse_to_word_array(&self) -> io::Result<[i16; 65536]> {
         match self {
             Filetype::EncodedBinary(s) => {
