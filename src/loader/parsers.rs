@@ -2,18 +2,17 @@ use std::{collections::{HashMap, VecDeque}, num::ParseIntError};
 
 pub fn test() {
     match parse_asm(
-        r"
+        r#"
                     .ORIG x3000
-                    BRn -1
-                    ADD r0, r0, -1
+                    .stringz "ab"
                     .end
-                    "
+                    "#
         .to_owned(),
         // 0000 1001
     ) {
         Ok(val) => {
             println!("x3000 {:0>4X}", val[0x3000]);
-            println!("x3001 {:0>16b}", val[0x3001]);
+            println!("x3001 {:0>4X}", val[0x3001]);
             println!("x3002 {:0>4X}", val[0x3002]);
         }
         Err(e) => {
@@ -68,6 +67,7 @@ fn parse_register_without_comma(s: &str) -> Result<u16, String> {
 
 fn parse_register_with_comma(s: &str) -> Result<u16, String> {
     if &s[0..1] != "r" {
+        println!("s[0] = {}", &s[0..1]);
         return Err(format!("Expected a register"));
     } else if &s[s.len() - 1..] != "," {
         return Err(format!("Expected more arguments"));
@@ -89,7 +89,7 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
         .split_whitespace()
         .map(|e| e.to_lowercase())
         .collect::<Vec<String>>();
-    let symbol_table = HashMap::<&str, usize>::new();
+    let mut symbol_table = HashMap::<&str, usize>::new();
     let mut update_queue = VecDeque::<(usize, &str)>::new();
     let mut current_mem_address = None;
     let mut return_bytes = [0; 65536];
@@ -347,7 +347,325 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                             return_bytes[current_mem_address.unwrap()] =
                                 ((0b0000 << 12) + (nzp << 9) + offset - ((offset >> 9) << 9)) as i16;
                         }
-                        _ => {}
+                        "jmp" => {
+                            token_ptr += 1;
+                            let base_r = match parse_register_without_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => return Err(format!("Error matching register in JMP: {e}")),
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b1100 << 12) + (base_r << 6)) as i16;
+                        }
+                        "jsr" => {
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -1024 <= val && val <= 1023 {
+                                        val
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in JSR: PCOffset11 exceeds bounds [-1024, 1023]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b0100 << 12) + (0b1 << 11) + offset - ((offset >> 11) << 11)) as i16;
+                        }
+                        "jsrr" => {
+                            token_ptr += 1;
+                            let base_r = match parse_register_without_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => return Err(format!("Error matching register in JSRR: {e}")),
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b0100 << 12) + (base_r << 6)) as i16;
+                        }
+                        "ld" => {
+                            token_ptr += 1;
+                            let dr = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading destination register in LD: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -256 <= val && val <= 255 {
+                                        val as u16
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in LD: PCOffset9 exceeds bounds [-256, 255]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b0010 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                        }
+                        "ldi" => {
+                            token_ptr += 1;
+                            let dr = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading destination register in LDI: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -256 <= val && val <= 255 {
+                                        val as u16
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in LDI: PCOffset9 exceeds bounds [-256, 255]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b1010 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                        }
+                        "ldr" => {
+                            token_ptr += 1;
+                            let dr = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading destination register in LDI: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let base_r = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading base register in LDR: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -32 <= val && val <= 31 {
+                                        val as u16
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in LDR: offset6 exceeds bounds [-32, 31]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b0110 << 12) + (dr << 9) + (base_r << 6) + (offset - ((offset >> 9) << 9))) as i16;
+                        }
+                        "lea" => {
+                            token_ptr += 1;
+                            let dr = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading destination register in LEA: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -256 <= val && val <= 255 {
+                                        val as u16
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in LEA: PCOffset9 exceeds bounds [-256, 255]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b1110 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                        }
+                        "st" => {
+                            token_ptr += 1;
+                            let sr = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading source register in ST: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -256 <= val && val <= 255 {
+                                        val as u16
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in ST: PCOffset9 exceeds bounds [-256, 255]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b0011 << 12) + (sr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                        }
+                        "sti" => {
+                            token_ptr += 1;
+                            let sr = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading source register in STI: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -256 <= val && val <= 255 {
+                                        val as u16
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in STI: PCOffset9 exceeds bounds [-256, 255]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b1011 << 12) + (sr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                        }
+                        "str" => {
+                            token_ptr += 1;
+                            let sr = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading destination register in STR: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let base_r = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                                Ok(val) => val,
+                                Err(e) => {
+                                    return Err(format!(
+                                        "Error while reading base register in STR: {e}"
+                                    ))
+                                }
+                            };
+
+                            token_ptr += 1;
+                            let offset = match parse_signed_hex_or_decimal_literal(
+                                tokens[token_ptr].as_str(),
+                            ) {
+                                Ok(val) => {
+                                    if -32 <= val && val <= 31 {
+                                        val as u16
+                                    } else {
+                                        return Err(format!("Error while reading PCOffset in STR: offset6 exceeds bounds [-32, 31]"));
+                                    }
+                                }
+                                Err(_) => {
+                                    if is_keyword(tokens[token_ptr].as_str()) {
+                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                    } else {
+                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                    }
+                                    0
+                                }
+                            };
+                            return_bytes[current_mem_address.unwrap()] =
+                                ((0b0111 << 12) + (sr << 9) + (base_r << 6) + (offset - ((offset >> 9) << 9))) as i16;
+                        }
+                        "getc" => {
+                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0000u16 as i16;
+                        }
+                        "out" => {
+                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0001u16 as i16;
+                        }
+                        "puts" => {
+                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0010u16 as i16;
+                        }
+                        "in" => {
+                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0011u16 as i16;
+                        }
+                        "halt" => {
+                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0101u16 as i16;
+                        }
+                        label => {
+                            symbol_table.insert(label, current_mem_address.unwrap());
+                            increment_mem_addr = false;
+                        }
                     };
                     if increment_mem_addr {
                         current_mem_address = Some(current_mem_address.unwrap() + 1);
@@ -356,6 +674,14 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
             },
         }
         token_ptr += 1;
+    }
+    println!("symbol table {:?}", symbol_table);
+    println!("update queue {:?}", update_queue);
+    for (addr, label) in update_queue {
+        if let Some(label_addr) = symbol_table.get(label) {
+            let offset = (*label_addr as isize) - (addr as isize) - 1;
+            return_bytes[addr] += offset as i16;
+        }
     }
     Ok(return_bytes)
 }
