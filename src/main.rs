@@ -1,7 +1,7 @@
-mod loader;
-mod util;
 mod lc3;
+mod loader;
 mod tui;
+mod util;
 
 use loader::Filetype;
 use tui::render_tui;
@@ -52,4 +52,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     Ok(())
 }
-

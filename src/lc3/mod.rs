@@ -133,9 +133,10 @@ impl State<'_> {
             }
             0b1010 => {
                 // println!(">>> DEBUG: Executing LDI");
-                self.reg[bits(self.ir, 11, 9) as usize] =
-                    self.mem[self.mem[(self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9))) as u16 as usize]
-                        as u16 as usize];
+                self.reg[bits(self.ir, 11, 9) as usize] = self.mem[self.mem
+                    [(self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9))) as u16 as usize]
+                    as u16
+                    as usize];
                 self.set_cc();
             }
             0b0110 => {
@@ -149,23 +150,24 @@ impl State<'_> {
             }
             0b1110 => {
                 // println!(">>> DEBUG: Executing LEA");
-                self.reg[bits(self.ir, 11, 9) as usize] = self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9));
+                self.reg[bits(self.ir, 11, 9) as usize] =
+                    self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9));
             }
             0b0011 => {
                 // println!(">>> DEBUG: Executing ST");
-                self.mem[(self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9))) as u16 as usize] = self.reg[bits(self.ir, 11, 9) as usize];
+                self.mem[(self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9))) as u16 as usize] =
+                    self.reg[bits(self.ir, 11, 9) as usize];
             }
             0b1011 => {
                 // println!(">>> DEBUG: Executing STI");
-                self.mem[self.mem[(self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9))) as u16 as usize] as u16 as usize] = self.reg[bits(self.ir, 11, 9) as usize];
+                self.mem[self.mem
+                    [(self.pc.wrapping_add(sext(bits(self.ir, 8, 0), 9))) as u16 as usize]
+                    as u16 as usize] = self.reg[bits(self.ir, 11, 9) as usize];
             }
             0b0111 => {
                 // println!(">>> DEBUG: Executing STR");
-                self.mem[(self.reg
-                    [bits(self.ir, 8, 6) as usize]
-                    + sext(bits(self.ir, 5, 0), 6))
-                    as u16
-                    as usize] = self.reg[bits(self.ir, 11, 9) as usize];
+                self.mem[(self.reg[bits(self.ir, 8, 6) as usize] + sext(bits(self.ir, 5, 0), 6))
+                    as u16 as usize] = self.reg[bits(self.ir, 11, 9) as usize];
             }
             0b1111 => {
                 // println!(">>> DEBUG: Executing TRAP");

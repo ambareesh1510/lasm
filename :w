@@ -5,7 +5,6 @@ pub fn test() {
         r"
                     .ORIG x3000
                     BRn -1
-                    ADD r0, r0, -1
                     .end
                     "
         .to_owned(),
@@ -13,7 +12,7 @@ pub fn test() {
     ) {
         Ok(val) => {
             println!("x3000 {:0>4X}", val[0x3000]);
-            println!("x3001 {:0>16b}", val[0x3001]);
+            println!("x3001 {:0>4X}", val[0x3001]);
             println!("x3002 {:0>4X}", val[0x3002]);
         }
         Err(e) => {
@@ -221,11 +220,7 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b0001 << 12) + (dr << 9) + (sr_1 << 6) + (bit_5 << 5) + match bit_5 {
-                                    0 => sr_2,
-                                    1 => sr_2 - ((sr_2 >> 5) << 5),
-                                    _ => unreachable!()
-                                })
+                                ((0b0001 << 12) + (dr << 9) + (sr_1 << 6) + (bit_5 << 5) + sr_2)
                                     as i16;
                         }
                         "and" => {
@@ -280,11 +275,7 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b0101 << 12) + (dr << 9) + (sr_1 << 6) + (bit_5 << 5) + match bit_5 {
-                                    0 => sr_2,
-                                    1 => sr_2 - ((sr_2 >> 5) << 5),
-                                    _ => unreachable!()
-                                })
+                                ((0b0101 << 12) + (dr << 9) + (sr_1 << 6) + (bit_5 << 5) + sr_2)
                                     as i16;
                         }
                         "not" => {
@@ -345,7 +336,7 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b0000 << 12) + (nzp << 9) + offset - ((offset >> 9) << 9)) as i16;
+                                ((0b0000 << 12) + (nzp << 9) + offset - ((offset >> 6) << 6)) as i16;
                         }
                         _ => {}
                     };

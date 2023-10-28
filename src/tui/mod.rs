@@ -1,14 +1,11 @@
-use std::collections::{VecDeque, vec_deque};
+use std::collections::{vec_deque, VecDeque};
 
 use ratatui::{
     prelude::*,
-    widgets::{Paragraph, Block, Borders},
+    widgets::{Block, Borders, Paragraph},
 };
 
-use crate::{
-    lc3::State,
-    util::bits,
-};
+use crate::{lc3::State, util::bits};
 
 pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error>> {
     // startup: Enable raw mode for the terminal, giving us fine control over user input
@@ -35,7 +32,7 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
                     Constraint::Percentage(80),
                     Constraint::Max(2),
                 ])
-                .split(f.size()); 
+                .split(f.size());
 
             let bottom_layout = Layout::default()
                 .direction(Direction::Horizontal)
@@ -46,7 +43,7 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
                     Constraint::Percentage(50),
                 ])
                 .split(outer_layout[1]);
-            
+
             let instructions_and_registers_layout = Layout::default()
                 .direction(Direction::Vertical)
                 .constraints(vec![
@@ -60,37 +57,37 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
 
             f.render_widget(
                 Paragraph::new(format!("Current file: {}", lc3_state.filename))
-                    .block(
-                        Block::default()
-                            .borders(Borders::all())
-                    ),
+                    .block(Block::default().borders(Borders::all())),
                 outer_layout[0],
             );
 
             let instruction_state: Text = vec![
                 Line::from(format!("PC: x{:0>4X}", lc3_state.pc)),
                 Line::from(format!("IR: x{:0<4X}", lc3_state.ir)),
-                Line::from(
-                    format!(
-                        "CC: {}", 
-                        // bits(lc3_state.psr, 2, 0)
-                        if bits(lc3_state.psr, 2, 2) == 1 { "n" } 
-                        else if bits(lc3_state.psr, 1, 1) == 1 { "z" } 
-                        else if bits(lc3_state.psr, 0, 0) == 1 { "p" }
-                        else { "-" },
-                    )
-                ),
+                Line::from(format!(
+                    "CC: {}",
+                    // bits(lc3_state.psr, 2, 0)
+                    if bits(lc3_state.psr, 2, 2) == 1 {
+                        "n"
+                    } else if bits(lc3_state.psr, 1, 1) == 1 {
+                        "z"
+                    } else if bits(lc3_state.psr, 0, 0) == 1 {
+                        "p"
+                    } else {
+                        "-"
+                    },
+                )),
                 // TODO!
                 // Line::from(format!("Decoded current instruction: x{:0<4X}", lc3_state.ir)),
-            ].into();
+            ]
+            .into();
 
             f.render_widget(
-                Paragraph::new(instruction_state)
-                    .block(
-                        Block::default()
-                            .title(" instruction data ")
-                            .borders(Borders::all())
-                    ),
+                Paragraph::new(instruction_state).block(
+                    Block::default()
+                        .title(" instruction data ")
+                        .borders(Borders::all()),
+                ),
                 instructions_and_registers_layout[0],
             );
 
@@ -102,15 +99,9 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
 
             f.render_widget(
                 Paragraph::new(register_state)
-                    .block(
-                        Block::default()
-                            .title(" registers ")
-                            .borders(
-                                Borders::ALL
-                            )
-                    ),
+                    .block(Block::default().title(" registers ").borders(Borders::ALL)),
                 instructions_and_registers_layout[1],
-             );
+            );
 
             let keybinds: Vec<Line> = vec![
                 Line::from("j/k: scroll memory viewer up/down"),
@@ -120,15 +111,9 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
 
             f.render_widget(
                 Paragraph::new(keybinds)
-                    .block(
-                        Block::default()
-                            .title(" keybinds ")
-                            .borders(
-                                Borders::ALL
-                            )
-                    ),
+                    .block(Block::default().title(" keybinds ").borders(Borders::ALL)),
                 instructions_and_registers_layout[2],
-             );
+            );
 
             let mut memory_addresses: Vec<Line> = vec![];
             let mut memory_values: Vec<Line> = vec![];
@@ -142,38 +127,39 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
             }
 
             f.render_widget(
-                Paragraph::new(memory_addresses)
-                    .block(Block::default()
-                       .title(" memory viewer ")
-                       .borders(Borders::LEFT.union(Borders::TOP).union(Borders::BOTTOM))),
-                bottom_layout[1]);
+                Paragraph::new(memory_addresses).block(
+                    Block::default()
+                        .title(" memory viewer ")
+                        .borders(Borders::LEFT.union(Borders::TOP).union(Borders::BOTTOM)),
+                ),
+                bottom_layout[1],
+            );
 
             f.render_widget(
-                Paragraph::new(memory_values)
-                    .block(Block::default().borders(Borders::RIGHT.union(Borders::TOP).union(Borders::BOTTOM))),
-                bottom_layout[2]);
+                Paragraph::new(memory_values).block(
+                    Block::default()
+                        .borders(Borders::RIGHT.union(Borders::TOP).union(Borders::BOTTOM)),
+                ),
+                bottom_layout[2],
+            );
 
             f.render_widget(
                 Paragraph::new("coming soon!")
-                    .block(Block::default()
-                       .title(" console ")
-                       .borders(Borders::ALL)),
-                bottom_layout[3]);
+                    .block(Block::default().title(" console ").borders(Borders::ALL)),
+                bottom_layout[3],
+            );
 
             f.render_widget(
-                Paragraph::new(
-                    if !memory_traverse_mode {
-                        String::from("")
-                    } else if memory_traverse_address == 0 {
-                        String::from(":goto x")
-                    } else {
-                        format!(":goto x{:X}", memory_traverse_address)
-                    }
-                )
-                    .block(Block::default()
-                       .borders(Borders::NONE)),
-                outer_layout[2]);
-
+                Paragraph::new(if !memory_traverse_mode {
+                    String::from("")
+                } else if memory_traverse_address == 0 {
+                    String::from(":goto x")
+                } else {
+                    format!(":goto x{:X}", memory_traverse_address)
+                })
+                .block(Block::default().borders(Borders::NONE)),
+                outer_layout[2],
+            );
         })?;
 
         // Check for user input every 250 milliseconds
@@ -185,7 +171,9 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
                         match key.code {
                             crossterm::event::KeyCode::Char(e) => {
                                 if let Some(digit) = e.to_digit(16) {
-                                    memory_traverse_address = memory_traverse_address.saturating_mul(16).saturating_add(digit as usize);
+                                    memory_traverse_address = memory_traverse_address
+                                        .saturating_mul(16)
+                                        .saturating_add(digit as usize);
                                 }
                             }
                             crossterm::event::KeyCode::Backspace => {
@@ -214,7 +202,7 @@ pub fn render_tui(lc3_state: &mut State) -> Result<(), Box<dyn std::error::Error
                         crossterm::event::KeyCode::Char('k') => {
                             memory_render_offset = memory_render_offset.saturating_sub(1);
                         }
-                        crossterm::event::KeyCode::Char('n') => { 
+                        crossterm::event::KeyCode::Char('n') => {
                             lc3_state.execute_next_instruction()?;
                             // terminal.clear()?;
                         }
