@@ -47,7 +47,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             render_tui(&mut state)?;
         }
         Commands::Test => {
-            loader::parsers::test();
+            loader::parser_rewrite::test()?;
+            // loader::parsers::test();
         }
     }
     Ok(())

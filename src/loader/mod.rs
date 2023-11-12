@@ -1,3 +1,4 @@
+pub mod parser_rewrite;
 pub mod parsers;
 
 use std::fs;

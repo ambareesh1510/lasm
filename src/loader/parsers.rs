@@ -1,4 +1,7 @@
-use std::{collections::{HashMap, VecDeque}, num::ParseIntError};
+use std::{
+    collections::{HashMap, VecDeque},
+    num::ParseIntError,
+};
 
 pub fn test() {
     match parse_asm(
@@ -220,13 +223,16 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                     }
                                 }
                             };
-                            return_bytes[current_mem_address.unwrap()] =
-                                ((0b0001 << 12) + (dr << 9) + (sr_1 << 6) + (bit_5 << 5) + match bit_5 {
+                            return_bytes[current_mem_address.unwrap()] = ((0b0001 << 12)
+                                + (dr << 9)
+                                + (sr_1 << 6)
+                                + (bit_5 << 5)
+                                + match bit_5 {
                                     0 => sr_2,
                                     1 => sr_2 - ((sr_2 >> 5) << 5),
-                                    _ => unreachable!()
+                                    _ => unreachable!(),
                                 })
-                                    as i16;
+                                as i16;
                         }
                         "and" => {
                             token_ptr += 1;
@@ -279,13 +285,16 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                     }
                                 }
                             };
-                            return_bytes[current_mem_address.unwrap()] =
-                                ((0b0101 << 12) + (dr << 9) + (sr_1 << 6) + (bit_5 << 5) + match bit_5 {
+                            return_bytes[current_mem_address.unwrap()] = ((0b0101 << 12)
+                                + (dr << 9)
+                                + (sr_1 << 6)
+                                + (bit_5 << 5)
+                                + match bit_5 {
                                     0 => sr_2,
                                     1 => sr_2 - ((sr_2 >> 5) << 5),
-                                    _ => unreachable!()
+                                    _ => unreachable!(),
                                 })
-                                    as i16;
+                                as i16;
                         }
                         "not" => {
                             token_ptr += 1;
@@ -337,22 +346,32 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b0000 << 12) + (nzp << 9) + offset - ((offset >> 9) << 9)) as i16;
+                                ((0b0000 << 12) + (nzp << 9) + offset - ((offset >> 9) << 9))
+                                    as i16;
                         }
                         "jmp" => {
                             token_ptr += 1;
-                            let base_r = match parse_register_without_comma(tokens[token_ptr].as_str()) {
-                                Ok(val) => val,
-                                Err(e) => return Err(format!("Error matching register in JMP: {e}")),
-                            };
+                            let base_r =
+                                match parse_register_without_comma(tokens[token_ptr].as_str()) {
+                                    Ok(val) => val,
+                                    Err(e) => {
+                                        return Err(format!("Error matching register in JMP: {e}"))
+                                    }
+                                };
                             return_bytes[current_mem_address.unwrap()] =
                                 ((0b1100 << 12) + (base_r << 6)) as i16;
                         }
@@ -370,22 +389,32 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b0100 << 12) + (0b1 << 11) + offset - ((offset >> 11) << 11)) as i16;
+                                ((0b0100 << 12) + (0b1 << 11) + offset - ((offset >> 11) << 11))
+                                    as i16;
                         }
                         "jsrr" => {
                             token_ptr += 1;
-                            let base_r = match parse_register_without_comma(tokens[token_ptr].as_str()) {
-                                Ok(val) => val,
-                                Err(e) => return Err(format!("Error matching register in JSRR: {e}")),
-                            };
+                            let base_r =
+                                match parse_register_without_comma(tokens[token_ptr].as_str()) {
+                                    Ok(val) => val,
+                                    Err(e) => {
+                                        return Err(format!("Error matching register in JSRR: {e}"))
+                                    }
+                                };
                             return_bytes[current_mem_address.unwrap()] =
                                 ((0b0100 << 12) + (base_r << 6)) as i16;
                         }
@@ -413,15 +442,22 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b0010 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                                ((0b0010 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9)))
+                                    as i16;
                         }
                         "ldi" => {
                             token_ptr += 1;
@@ -447,15 +483,22 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b1010 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                                ((0b1010 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9)))
+                                    as i16;
                         }
                         "ldr" => {
                             token_ptr += 1;
@@ -469,7 +512,8 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                             };
 
                             token_ptr += 1;
-                            let base_r = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                            let base_r = match parse_register_with_comma(tokens[token_ptr].as_str())
+                            {
                                 Ok(val) => val,
                                 Err(e) => {
                                     return Err(format!(
@@ -491,15 +535,24 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
-                            return_bytes[current_mem_address.unwrap()] =
-                                ((0b0110 << 12) + (dr << 9) + (base_r << 6) + (offset - ((offset >> 9) << 9))) as i16;
+                            return_bytes[current_mem_address.unwrap()] = ((0b0110 << 12)
+                                + (dr << 9)
+                                + (base_r << 6)
+                                + (offset - ((offset >> 9) << 9)))
+                                as i16;
                         }
                         "lea" => {
                             token_ptr += 1;
@@ -525,15 +578,22 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b1110 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                                ((0b1110 << 12) + (dr << 9) + (offset - ((offset >> 9) << 9)))
+                                    as i16;
                         }
                         "st" => {
                             token_ptr += 1;
@@ -559,15 +619,22 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b0011 << 12) + (sr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                                ((0b0011 << 12) + (sr << 9) + (offset - ((offset >> 9) << 9)))
+                                    as i16;
                         }
                         "sti" => {
                             token_ptr += 1;
@@ -593,15 +660,22 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
                             return_bytes[current_mem_address.unwrap()] =
-                                ((0b1011 << 12) + (sr << 9) + (offset - ((offset >> 9) << 9))) as i16;
+                                ((0b1011 << 12) + (sr << 9) + (offset - ((offset >> 9) << 9)))
+                                    as i16;
                         }
                         "str" => {
                             token_ptr += 1;
@@ -615,7 +689,8 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                             };
 
                             token_ptr += 1;
-                            let base_r = match parse_register_with_comma(tokens[token_ptr].as_str()) {
+                            let base_r = match parse_register_with_comma(tokens[token_ptr].as_str())
+                            {
                                 Ok(val) => val,
                                 Err(e) => {
                                     return Err(format!(
@@ -637,30 +712,44 @@ fn parse_asm(source: String) -> Result<[i16; 65536], String> {
                                 }
                                 Err(_) => {
                                     if is_keyword(tokens[token_ptr].as_str()) {
-                                        return Err(format!("Error while reading label: found keyword {}", tokens[token_ptr].as_str()));
+                                        return Err(format!(
+                                            "Error while reading label: found keyword {}",
+                                            tokens[token_ptr].as_str()
+                                        ));
                                     } else {
-                                        update_queue.push_back((current_mem_address.unwrap(), tokens[token_ptr].as_str()));
+                                        update_queue.push_back((
+                                            current_mem_address.unwrap(),
+                                            tokens[token_ptr].as_str(),
+                                        ));
                                     }
                                     0
                                 }
                             };
-                            return_bytes[current_mem_address.unwrap()] =
-                                ((0b0111 << 12) + (sr << 9) + (base_r << 6) + (offset - ((offset >> 9) << 9))) as i16;
+                            return_bytes[current_mem_address.unwrap()] = ((0b0111 << 12)
+                                + (sr << 9)
+                                + (base_r << 6)
+                                + (offset - ((offset >> 9) << 9)))
+                                as i16;
                         }
                         "getc" => {
-                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0000u16 as i16;
+                            return_bytes[current_mem_address.unwrap()] =
+                                0b1111_0000_0010_0000u16 as i16;
                         }
                         "out" => {
-                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0001u16 as i16;
+                            return_bytes[current_mem_address.unwrap()] =
+                                0b1111_0000_0010_0001u16 as i16;
                         }
                         "puts" => {
-                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0010u16 as i16;
+                            return_bytes[current_mem_address.unwrap()] =
+                                0b1111_0000_0010_0010u16 as i16;
                         }
                         "in" => {
-                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0011u16 as i16;
+                            return_bytes[current_mem_address.unwrap()] =
+                                0b1111_0000_0010_0011u16 as i16;
                         }
                         "halt" => {
-                            return_bytes[current_mem_address.unwrap()] = 0b1111_0000_0010_0101u16 as i16;
+                            return_bytes[current_mem_address.unwrap()] =
+                                0b1111_0000_0010_0101u16 as i16;
                         }
                         label => {
                             symbol_table.insert(label, current_mem_address.unwrap());
